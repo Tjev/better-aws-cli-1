@@ -7,7 +7,8 @@ from six import text_type
 
 class Bindings(object):
     """Handles prompt toolkit hotkeys."""
-    def __init__(self, toggle_fuzzy, toggle_cache, refresh_cache):
+    def __init__(
+            self, toggle_fuzzy, toggle_cache, refresh_cache, toggle_shell):
         """
         :param toggle_fuzzy: A callable that toggles fuzzy completion
             on/off.
@@ -21,9 +22,11 @@ class Bindings(object):
         """
         self.bindings = self._create_bindings(toggle_fuzzy,
                                               toggle_cache,
-                                              refresh_cache)
+                                              refresh_cache,
+                                              toggle_shell)
 
-    def _create_bindings(self, toggle_fuzzy, toggle_cache, refresh_cache):
+    def _create_bindings(
+            self, toggle_fuzzy, toggle_cache, refresh_cache, toggle_shell):
 
         self.bindings = KeyBindings()
 
@@ -48,4 +51,10 @@ class Bindings(object):
             """
             refresh_cache()
 
+        @self.bindings.add(text_type('f7'))
+        def _(event):
+            """
+            Toggle calls to underlying shell.
+            """
+            toggle_shell()
         return self.bindings

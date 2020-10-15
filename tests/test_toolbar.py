@@ -15,12 +15,16 @@ class FakeBAC(object):
         self._profile_manager = pm
         self._fuzzy = True
         self._cache_completion = True
+        self._shell = True
 
     def toggle_fuzzy(self):
         self._fuzzy = not self._fuzzy
 
     def toggle_cache(self):
         self._cache_completion = not self._cache_completion
+
+    def toggle_shell(self):
+        self._shell = not self._shell
 
 
 class ToolbarTest(unittest.TestCase):
@@ -33,6 +37,7 @@ class ToolbarTest(unittest.TestCase):
         self.toolbar = toolbar.Toolbar(
                 lambda: self.bac._fuzzy,
                 lambda: self.bac._cache_completion,
+                lambda: self.bac._shell,
                 lambda: self.bac._profile_manager.active_profiles,
                 lambda: self.bac._profile_manager.active_regions)
 
@@ -53,7 +58,8 @@ class ToolbarTest(unittest.TestCase):
         bottom_tb = [
                 '[F2] Fuzzy: ON',
                 '[F3] Caching: ON',
-                '[F5] Refresh cache'
+                '[F5] Refresh cache',
+                '[F7] Shell: ON'
                 ]
         expected = self._prepare_tb(top_tb, bottom_tb)
         result = self.toolbar.handler()
@@ -62,6 +68,7 @@ class ToolbarTest(unittest.TestCase):
     def test_toolbar_toggles_off(self):
         self.bac.toggle_fuzzy()
         self.bac.toggle_cache()
+        self.bac.toggle_shell()
         top_tb = [
                 'Active profiles: None',
                 'Active regions: default(us-east-1)',
@@ -69,7 +76,8 @@ class ToolbarTest(unittest.TestCase):
         bottom_tb = [
                 '[F2] Fuzzy: OFF',
                 '[F3] Caching: OFF',
-                '[F5] Refresh cache'
+                '[F5] Refresh cache',
+                '[F7] Shell: OFF'
                 ]
         expected = self._prepare_tb(top_tb, bottom_tb)
         result = self.toolbar.handler()
@@ -84,7 +92,8 @@ class ToolbarTest(unittest.TestCase):
         bottom_tb = [
                 '[F2] Fuzzy: ON',
                 '[F3] Caching: ON',
-                '[F5] Refresh cache'
+                '[F5] Refresh cache',
+                '[F7] Shell: ON'
                 ]
         expected = self._prepare_tb(top_tb, bottom_tb)
         result = self.toolbar.handler()

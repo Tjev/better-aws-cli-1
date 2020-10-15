@@ -229,7 +229,7 @@ class BACCompleter(Completer):
             return
 
         elif self._query_context:
-                self._query_context = None
+            self._query_context = None
 
         # autocomplete aws-cli commands
         for c in self._aws_completer.get_completions(

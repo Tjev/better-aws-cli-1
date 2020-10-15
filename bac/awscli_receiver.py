@@ -52,7 +52,7 @@ class AwsCliReceiver(object):
                         ' supported. Dropping following environmental'
                         ' variables: %s' % dropped_vars)
 
-    def execute_awscli_command(self, command, args):
+    def execute_awscli_command(self, command, args, shell):
         """
         Handle the execution of an aws-cli command.
 
@@ -93,20 +93,22 @@ class AwsCliReceiver(object):
             log.warning('No region specified or active,'
                         ' using "us-east-1" instead.')
 
-        if args.check:
+        if args.check and not shell:
             self._check(command, args)
         if args.dry_run:
             return
 
         commands = self._prepare_commands(command, args)
-        self._run(commands)
+        self._run(commands, shell)
 
-    def _run(self, commands):
+    def _run(self, commands, shell_enabled):
         for data in commands:
             cmd, profile, region = data
+            cmd_string = ' '.join(cmd)
             log.info('Executing for: Profile=%s,  Region=%s, Command:\n"%s"'
-                     % (profile, region, ' '.join(cmd)))
-            subprocess.call(cmd, env=self._env)
+                     % (profile, region, cmd_string))
+            cmd = cmd_string if shell_enabled else cmd
+            subprocess.call(cmd, env=self._env, shell=shell_enabled)
 
     def _check(self, command, args):
         # These may end command execution by raising an exception
@@ -121,7 +123,8 @@ class AwsCliReceiver(object):
         commands = list()
         for profile in args.profiles:
             cmd = list(command)
-            cmd.extend(['--profile', profile])
+            # cmd.extend(['--profile', profile])
+            cmd[1:1] = ['--profile', profile]
             regional_commands = self._apply_regions(cmd, args, profile)
             commands.extend(regional_commands)
         return commands
@@ -137,7 +140,8 @@ class AwsCliReceiver(object):
 
         for region in regions:
             cmd = list(command)
-            cmd.extend(['--region', region])
+            # cmd.extend(['--region', region])
+            cmd[1:1] = ['--region', region]
             data = (cmd, profile, region)
             commands.append(data)
         return commands
@@ -155,7 +159,7 @@ class AwsCliReceiver(object):
             filtered = self._filter(regions, command, profile)
         except ClientError as e:
             if ('UnauthorizedOperation' in str(e)
-                or 'AccessDeniedException' in str(e)):
+                    or 'AccessDeniedException' in str(e)):
                 log.warning(
                         'Region filtering is not supported for "%s"'
                         ' profile. This is most probably caused by'

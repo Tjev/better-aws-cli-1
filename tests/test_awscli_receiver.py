@@ -64,13 +64,15 @@ class AwsCliReceiverTest(unittest.TestCase):
     @mock.patch('subprocess.call')
     def test_help(self, call):
         self.command = ['aws', 's3api', 'help']
-        self.receiver.execute_awscli_command(self.command, self.args)
+        self.receiver.execute_awscli_command(
+                self.command, self.args, shell=False)
         call.assert_called_once_with(['aws', 's3api', 'help'], env=None)
 
     @log_capture(level=logging.WARNING)
     def test_no_profiles(self, captured_log):
         self.pm.active_profiles = set()
-        self.receiver.execute_awscli_command(self.command, self.args)
+        self.receiver.execute_awscli_command(
+                self.command, self.args, shell=False)
         check_logs(captured_log, 'bac.awscli_receiver',
                    'WARNING', 'No profiles')
 
@@ -81,14 +83,15 @@ class AwsCliReceiverTest(unittest.TestCase):
         self.pm.active_regions = set()
         with captured_output() as (out, err):
             with LogCapture(level=logging.WARNING) as captured_log:
-                self.receiver.execute_awscli_command(self.command, self.args)
+                self.receiver.execute_awscli_command(
+                        self.command, self.args, shell=False)
         results = [
                 mock.call(
-                    ['aws', 's3api', 'list-buckets', '--profile',
-                     'uno', '--region', 'us-east-1'], env=None),
+                    ['aws',  '--region', 'us-east-1', '--profile',
+                     'uno', 's3api', 'list-buckets'], env=None, shell=False),
                 mock.call(
-                    ['aws', 's3api', 'list-buckets', '--profile',
-                     'dos', '--region', 'us-east-1'], env=None)
+                    ['aws',  '--region', 'us-east-1', '--profile',
+                     'dos', 's3api', 'list-buckets'], env=None, shell=False),
                 ]
         call.assert_has_calls(results, any_order=True)
         check_logs(captured_log, 'bac.awscli_receiver',
@@ -98,20 +101,21 @@ class AwsCliReceiverTest(unittest.TestCase):
     @mock.patch('bac.awscli_receiver.AwsCliReceiver._filter_regions',
                 mock.Mock(return_value=REGIONS))
     def test_cmd_exec(self, call):
-        self.receiver.execute_awscli_command(self.command, self.args)
+        self.receiver.execute_awscli_command(
+                self.command, self.args, shell=False)
         results = [
                 mock.call(
-                    ['aws', 's3api', 'list-buckets', '--profile',
-                     'uno', '--region', 'us-east-1'], env=None),
+                    ['aws',  '--region', 'us-east-1', '--profile',
+                     'uno', 's3api', 'list-buckets'], env=None, shell=False),
                 mock.call(
-                    ['aws', 's3api', 'list-buckets', '--profile',
-                     'uno', '--region', 'eu-west-1'], env=None),
+                    ['aws',  '--region', 'eu-west-1', '--profile',
+                     'uno', 's3api', 'list-buckets'], env=None, shell=False),
                 mock.call(
-                    ['aws', 's3api', 'list-buckets', '--profile',
-                     'dos', '--region', 'us-east-1'], env=None),
+                    ['aws',  '--region', 'us-east-1', '--profile',
+                     'dos', 's3api', 'list-buckets'], env=None, shell=False),
                 mock.call(
-                    ['aws', 's3api', 'list-buckets', '--profile',
-                     'dos', '--region', 'eu-west-1'], env=None)
+                    ['aws',  '--region', 'eu-west-1', '--profile',
+                     'dos', 's3api', 'list-buckets'], env=None, shell=False),
                 ]
         call.assert_has_calls(results, any_order=True)
 
@@ -120,35 +124,38 @@ class AwsCliReceiverTest(unittest.TestCase):
                 mock.Mock(return_value=REGIONS))
     def test_cmd_exec_explicit_profile(self, call):
         self.command.extend(['--profile', 'tres'])
-        self.receiver.execute_awscli_command(self.command, self.args)
+        self.receiver.execute_awscli_command(
+                self.command, self.args, shell=False)
         results = [
                 mock.call(
-                    ['aws', 's3api', 'list-buckets', '--profile',
-                     'tres', '--region', 'us-east-1'], env=None),
+                    ['aws', '--region', 'us-east-1', 's3api', 'list-buckets',
+                     '--profile', 'tres'], env=None, shell=False),
                 mock.call(
-                    ['aws', 's3api', 'list-buckets', '--profile',
-                     'tres', '--region', 'eu-west-1'], env=None),
+                    ['aws', '--region', 'eu-west-1', 's3api', 'list-buckets',
+                     '--profile', 'tres'], env=None, shell=False),
                 ]
         call.assert_has_calls(results, any_order=True)
 
     def test_handle_invalid_explicit_profile(self):
         self.command.extend(['--profile', 'cuatro'])
         with self.assertRaises(errors.InvalidAwsCliCommandError):
-            self.receiver.execute_awscli_command(self.command, self.args)
+            self.receiver.execute_awscli_command(
+                    self.command, self.args, shell=False)
 
     @mock.patch('subprocess.call')
     @mock.patch('bac.awscli_receiver.AwsCliReceiver._filter_regions',
                 mock.Mock(return_value={'ca-central-1'}))
     def test_cmd_exec_explicit_region(self, call):
         self.command.extend(['--region', 'ca-central-1'])
-        self.receiver.execute_awscli_command(self.command, self.args)
+        self.receiver.execute_awscli_command(
+                self.command, self.args, shell=False)
         results = [
                 mock.call(
-                    ['aws', 's3api', 'list-buckets', '--region',
-                     'ca-central-1', '--profile', 'uno'], env=None),
+                    ['aws', '--profile', 'uno', 's3api', 'list-buckets',
+                     '--region', 'ca-central-1'], env=None, shell=False),
                 mock.call(
-                    ['aws', 's3api', 'list-buckets', '--region',
-                     'ca-central-1', '--profile', 'dos'], env=None),
+                    ['aws', '--profile', 'dos', 's3api', 'list-buckets',
+                     '--region', 'ca-central-1'], env=None, shell=False),
                 ]
         call.assert_has_calls(results, any_order=True)
 
@@ -161,7 +168,8 @@ class AwsCliReceiverTest(unittest.TestCase):
         self.command.extend(['--region', 'ca-central-1'])
         with captured_output() as (out, err):
             with LogCapture() as captured_log:
-                self.receiver.execute_awscli_command(self.command, self.args)
+                self.receiver.execute_awscli_command(
+                        self.command, self.args, shell=False)
         call.assert_not_called()
         check_logs(captured_log, 'bac.awscli_receiver',
                    'WARNING', ['None', 'regions', 'uno'])
@@ -172,14 +180,15 @@ class AwsCliReceiverTest(unittest.TestCase):
         self.pm.active_regions = {'ca-central-1', 'us-east-1', 'eu-west-1'}
         ssm_paginate.return_value = SUPPORTED_REGIONS
         with captured_output() as (out, err):
-            self.receiver.execute_awscli_command(self.command, self.args)
+            self.receiver.execute_awscli_command(
+                    self.command, self.args, shell=False)
         results = [
                 mock.call(
-                    ['aws', 's3api', 'list-buckets', '--profile',
-                     'uno', '--region', 'eu-west-1'], env=None),
+                    ['aws',  '--region', 'eu-west-1', '--profile',
+                     'uno', 's3api', 'list-buckets'], env=None, shell=False),
                 mock.call(
-                    ['aws', 's3api', 'list-buckets', '--profile',
-                     'dos', '--region', 'eu-west-1'], env=None),
+                    ['aws',  '--region', 'eu-west-1', '--profile',
+                     'dos', 's3api', 'list-buckets'], env=None, shell=False),
                 ]
         call.assert_has_calls(results, any_order=True)
 
@@ -191,7 +200,8 @@ class AwsCliReceiverTest(unittest.TestCase):
         self.pm.active_profiles = {'uno'}
         with captured_output() as (out, err):
             with LogCapture() as captured_log:
-                self.receiver.execute_awscli_command(self.command, self.args)
+                self.receiver.execute_awscli_command(
+                        self.command, self.args, shell=False)
         call.assert_not_called()
         check_logs(captured_log, 'bac.awscli_receiver',
                    'WARNING', ['None', 'regions', 'uno'])
@@ -203,14 +213,15 @@ class AwsCliReceiverTest(unittest.TestCase):
         self.pm.active_profiles = {'uno'}
         with captured_output() as (out, err):
             with LogCapture(level=logging.WARNING) as captured_log:
-                self.receiver.execute_awscli_command(self.command, self.args)
+                self.receiver.execute_awscli_command(
+                        self.command, self.args, shell=False)
         results = [
                 mock.call(
-                    ['aws', 's3api', 'list-buckets', '--profile',
-                     'uno', '--region', 'us-east-1'], env=None),
+                    ['aws',  '--region', 'us-east-1', '--profile',
+                     'uno', 's3api', 'list-buckets'], env=None, shell=False),
                 mock.call(
-                    ['aws', 's3api', 'list-buckets', '--profile',
-                     'uno', '--region', 'eu-west-1'], env=None),
+                    ['aws',  '--region', 'eu-west-1', '--profile',
+                     'uno', 's3api', 'list-buckets'], env=None, shell=False),
                 ]
         call.assert_has_calls(results, any_order=True)
         check_logs(captured_log, 'bac.awscli_receiver', 'WARNING',
@@ -224,14 +235,15 @@ class AwsCliReceiverTest(unittest.TestCase):
         self.pm.active_profiles = {'uno'}
         with captured_output() as (out, err):
             with LogCapture(level=logging.WARNING) as captured_log:
-                self.receiver.execute_awscli_command(self.command, self.args)
+                self.receiver.execute_awscli_command(
+                        self.command, self.args, shell=False)
         results = [
                 mock.call(
-                    ['aws', 's3api', 'list-buckets', '--profile',
-                     'uno', '--region', 'us-east-1'], env=None),
+                    ['aws',  '--region', 'us-east-1', '--profile',
+                     'uno', 's3api', 'list-buckets'], env=None, shell=False),
                 mock.call(
-                    ['aws', 's3api', 'list-buckets', '--profile',
-                     'uno', '--region', 'eu-west-1'], env=None),
+                    ['aws',  '--region', 'eu-west-1', '--profile',
+                     'uno', 's3api', 'list-buckets'], env=None, shell=False),
                 ]
         call.assert_has_calls(results, any_order=True)
         check_logs(captured_log, 'bac.awscli_receiver', 'WARNING',
@@ -241,7 +253,8 @@ class AwsCliReceiverTest(unittest.TestCase):
     def test_handle_service_extraction_error(self):
         command = ['aws', '--weird-arg', 's3api', 'list-buckets']
         with self.assertRaises(errors.InvalidAwsCliCommandError):
-            self.receiver.execute_awscli_command(command, self.args)
+            self.receiver.execute_awscli_command(
+                    command, self.args, shell=False)
 
     @mock.patch('subprocess.call')
     @mock.patch('bac.awscli_receiver.AwsCliReceiver._filter_supported_regions')
@@ -250,7 +263,8 @@ class AwsCliReceiverTest(unittest.TestCase):
         command = ['aws', 'ec2', 'describe-instances']
         self.pm.active_profiles = {'uno'}
         with captured_output() as (out, err):
-            self.receiver.execute_awscli_command(command, self.args)
+            self.receiver.execute_awscli_command(
+                    command, self.args, shell=False)
         filter_supported.assert_called_once_with(
                 REGIONS, 'ec2', SESSIONS['uno'])
         call.assert_not_called()
@@ -261,7 +275,8 @@ class AwsCliReceiverTest(unittest.TestCase):
         filter_supported.return_value = set()
         self.pm.active_profiles = {'uno'}
         with captured_output() as (out, err):
-            self.receiver.execute_awscli_command(self.command, self.args)
+            self.receiver.execute_awscli_command(
+                    self.command, self.args, shell=False)
         filter_supported.assert_called_once_with(
                 REGIONS, 's3', SESSIONS['uno'])
         call.assert_not_called()
@@ -271,7 +286,8 @@ class AwsCliReceiverTest(unittest.TestCase):
     def test_dry_run_and_no_check(self, check_method, call):
         vars(self.args)['dry_run'] = True
         vars(self.args)['check'] = False
-        self.receiver.execute_awscli_command(self.command, self.args)
+        self.receiver.execute_awscli_command(
+                self.command, self.args, shell=False)
         check_method.assert_not_called()
         call.assert_not_called()
 
@@ -279,7 +295,8 @@ class AwsCliReceiverTest(unittest.TestCase):
     @mock.patch('bac.awscli_receiver.AwsCliReceiver._check_privileges')
     def test_no_priv_check(self, priv_check_method, call):
         vars(self.args)['dry_run'] = True
-        self.receiver.execute_awscli_command(self.command, self.args)
+        self.receiver.execute_awscli_command(
+                self.command, self.args, shell=False)
         priv_check_method.assert_not_called()
         call.assert_not_called()
 
@@ -288,7 +305,8 @@ class AwsCliReceiverTest(unittest.TestCase):
         vars(self.args)['check'] = True
         vars(self.args)['priv_check'] = True
         self.checker.check.return_value = 's3'
-        self.receiver.execute_awscli_command(self.command, self.args)
+        self.receiver.execute_awscli_command(
+                self.command, self.args, shell=False)
         results = [mock.call('s3', 'uno'), mock.call('s3', 'dos')]
         self.checker.privilege_check.assert_has_calls(results, any_order=True)
 
@@ -299,7 +317,8 @@ class AwsCliReceiverTest(unittest.TestCase):
         vars(self.args)['priv_check'] = True
         self.checker.check.return_value = 's3'
         self.command.extend(['--profile', 'tres'])
-        self.receiver.execute_awscli_command(self.command, self.args)
+        self.receiver.execute_awscli_command(
+                self.command, self.args, shell=False)
         self.checker.privilege_check.assert_called_once_with('s3', 'tres')
 
     def test_invalid_command(self):
@@ -307,7 +326,8 @@ class AwsCliReceiverTest(unittest.TestCase):
         vars(self.args)['check'] = True
         self.checker.check.side_effect = errors.CLICheckerSyntaxError()
         with self.assertRaises(errors.CLICheckerSyntaxError):
-            self.receiver.execute_awscli_command(self.command, self.args)
+            self.receiver.execute_awscli_command(
+                    self.command, self.args, shell=False)
 
     def test_insufficient_privileges(self):
         # This only ensures that the priv check error is propagated correctly
@@ -315,4 +335,5 @@ class AwsCliReceiverTest(unittest.TestCase):
         vars(self.args)['priv_check'] = True
         self.checker.check.side_effect = errors.CLICheckerPermissionException()
         with self.assertRaises(errors.CLICheckerPermissionException):
-            self.receiver.execute_awscli_command(self.command, self.args)
+            self.receiver.execute_awscli_command(
+                    self.command, self.args, shell=False)

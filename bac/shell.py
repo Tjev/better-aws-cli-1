@@ -72,6 +72,7 @@ class BAC(object):
     def __init__(self):
         self._fuzzy = True
         self._cache_completion = True
+        self._shell = False
         self._profile_manager = ProfileManager()
         self._checker = CLIChecker(self._profile_manager.get_first_profile())
         self._aws_cli = AwsCliReceiver(self._profile_manager, self._checker)
@@ -79,7 +80,8 @@ class BAC(object):
         self._completer = BACCompleter(self._profile_manager)
         self._bindings = Bindings(self.toggle_fuzzy,
                                   self.toggle_cache,
-                                  self.refresh_cache)
+                                  self.refresh_cache,
+                                  self.toggle_shell)
         self._prompt_session = (
                 PromptSession(text_type(BAC_PROMPT),
                               history=FileHistory(BAC_HISTORY),
@@ -103,6 +105,15 @@ class BAC(object):
     def refresh_cache(self):
         """Refresh all resource cache."""
         self._completer.refresh_cache()
+
+    def toggle_shell(self):
+        """
+        Toggle direct calls to underlying shell on/off.
+
+        Allows making command calls to shell when executing aws-cli commands.
+        This enables useful bash features such as output redirection.
+        """
+        self._shell = not self._shell
 
     def run_cli(self):
         """Run the main Better AWS CLI loop."""
@@ -138,7 +149,8 @@ class BAC(object):
         log.debug('Choice made: %s' % choice)
 
         if choice == 'aws':
-            self._aws_cli.execute_awscli_command(remainder, parsed_args)
+            self._aws_cli.execute_awscli_command(
+                    remainder, parsed_args, self._shell)
             return
 
         if choice == 'batch-command':
@@ -157,6 +169,7 @@ class BAC(object):
         toolbar = Toolbar(
                 lambda: self._fuzzy,
                 lambda: self._cache_completion,
+                lambda: self._shell,
                 lambda: self._profile_manager.active_profiles,
                 lambda: self._profile_manager.active_regions)
         return toolbar.handler

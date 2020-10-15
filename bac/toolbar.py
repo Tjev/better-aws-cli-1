@@ -7,7 +7,9 @@ from six import text_type
 
 class Toolbar(object):
     """Handles content shown in propt toolkit toolbar."""
-    def __init__(self, get_fuzzy, get_caching, get_profiles, get_regions):
+    def __init__(
+            self, get_fuzzy, get_caching, get_shell,
+            get_profiles, get_regions):
         """
         :param get_fuzzy: A callable that retrieves current fuzzy
             completion setting.
@@ -24,9 +26,10 @@ class Toolbar(object):
         :rtype: None
         """
         self.handler = self._create_toolbar_handler(
-                get_fuzzy, get_caching, get_profiles, get_regions)
+                get_fuzzy, get_caching, get_shell, get_profiles, get_regions)
 
-    def _create_toolbar_handler(self, fuzzy, caching, profiles, regions):
+    def _create_toolbar_handler(
+            self, fuzzy, caching, shell, profiles, regions):
 
         def get_toolbar():
             p = profiles()
@@ -41,10 +44,12 @@ class Toolbar(object):
 
             is_fuzzy = 'ON' if fuzzy() else 'OFF'
             is_caching = 'ON' if caching() else 'OFF'
+            shell_enabled = 'ON' if shell() else 'OFF'
             bottom_tb = [
                     '[F2] Fuzzy: %s' % is_fuzzy,
                     '[F3] Caching: %s' % is_caching,
-                    '[F5] Refresh cache'
+                    '[F5] Refresh cache',
+                    '[F7] Shell: %s' % shell_enabled
                     ]
             bottom_tb = '   '.join(bottom_tb)
 
