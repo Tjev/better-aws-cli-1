@@ -96,7 +96,7 @@ class BatchCommandTest(unittest.TestCase):
     @mock.patch('bac.batch.Parser.parse', mock.Mock(return_value=['foo']))
     @mock.patch('bac.batch.execute_command')
     def test_handle_output(self, execute_command):
-        execute_command.return_value = (b'Some output', '', 0)
+        execute_command.return_value = ('Some output', '', 0)
         with captured_output() as (out, err):
             batch.CommandBatch(self.globals, self.argv, self.checker)
             expected = text_type('Some output\n')
