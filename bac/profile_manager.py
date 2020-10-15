@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright © 2020, GoodData(R) Corporation. All rights reserved.
 import boto3
+import fnmatch
 import logging
 import os
 
@@ -88,48 +89,39 @@ class ProfileManager(object):
 
     def switch_profiles(self, profiles):
         """Switch to desired set of profiles."""
-        if '*' in profiles:
-            self.active_profiles = self.sessions.keys()
-        else:
-            self.active_profiles = self._check_profiles(profiles)
+        matched = self._match_patterns(
+                profiles, 'profile', self.sessions.keys())
+        self.active_profiles = matched
 
     def include_profiles(self, profiles):
         """Include profiles to the set of currently active profiles."""
-        if '*' in profiles:
-            self.active_profiles = set(self.sessions.keys())
-        else:
-            valid = self._check_profiles(profiles)
-            self.active_profiles = self.active_profiles.union(valid)
+        matched = self._match_patterns(
+                profiles, 'profile', self.sessions.keys())
+        self.active_profiles = self.active_profiles.union(matched)
 
     def exclude_profiles(self, profiles):
         """Exclude profiles from the set of currently active profiles."""
-        if '*' in profiles:
-            self.active_profiles = set()
-        else:
-            self.active_profiles = self.active_profiles.difference(
-                                     set(profiles))
+        matched = self._match_patterns(
+                profiles, 'profile', self.sessions.keys())
+        self.active_profiles = self.active_profiles.difference(matched)
 
     def switch_regions(self, regions):
         """Switch to desired set of regions."""
-        if '*' in regions:
-            self.active_regions = self.available_regions
-        else:
-            self.active_regions = self._check_regions(regions)
+        matched = self._match_patterns(
+                regions, 'region', self.available_regions)
+        self.active_regions = matched
 
     def include_regions(self, regions):
         """Include regions to the set of currently active regions."""
-        if '*' in regions:
-            self.active_regions = self.available_regions
-        else:
-            valid = self._check_regions(regions)
-            self.active_regions = self.active_regions.union(valid)
+        matched = self._match_patterns(
+                regions, 'region', self.available_regions)
+        self.active_regions = self.active_regions.union(matched)
 
     def exclude_regions(self, regions):
         """Exclude regions from the set of currently active regions."""
-        if '*' in regions:
-            self.active_regions = set()
-        else:
-            self.active_regions = self.active_regions.difference(regions)
+        matched = self._match_patterns(
+                regions, 'region', self.available_regions)
+        self.active_regions = self.active_regions.difference(matched)
 
     def handle_command(self, command, args):
         """Attempt to call a corresponding method for given command."""
@@ -245,14 +237,15 @@ class ProfileManager(object):
             account_name = account_id
         return account_name
 
-    def _check_regions(self, regions):
-        given = set(regions)
-        valid = given.intersection(set(self.available_regions))
-        invalid = given.difference(valid)
-        if invalid:
-            log.warning('Following regions have not been found: {%s}'
-                        % ', '.join(invalid))
-        return valid
+    def _match_patterns(self, patterns, resource_name, data):
+        matched = set()
+        for pattern in patterns:
+            filtered = fnmatch.filter(data, pattern)
+            if not filtered:
+                log.warning('No %ss matched on pattern "%s".'
+                            % (resource_name, pattern))
+            matched = matched.union(set(filtered))
+        return matched
 
     def _load_regions(self):
         self.available_regions = None
@@ -266,15 +259,6 @@ class ProfileManager(object):
             parsed = EC2_REGIONS_JMES.search(regions)
             self.available_regions = set(parsed)
             return
-
-    def _check_profiles(self, profiles):
-        given = set(profiles)
-        valid = given.intersection(set(self.sessions.keys()))
-        invalid = given.difference(valid)
-        if invalid:
-            log.warning('Following profiles/roles have not been found: {%s}'
-                        % ', '.join(invalid))
-        return valid
 
     def _initialize_cmd_dicts(self):
         self._cmd_argless = {

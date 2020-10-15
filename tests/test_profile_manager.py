@@ -200,7 +200,7 @@ class ProfileManagerTest(unittest.TestCase):
         cmd = 'include-profiles'
         self.pm.handle_command(cmd, [cmd, PROFILE1, 'foo'])
         check_logs(captured_log, 'bac.profile_manager', 'WARNING',
-                   ['Following profiles/roles have not been found:', 'foo'])
+                   ['No profiles matched on pattern', 'foo'])
         expected = {PROFILE1}
         self.assertEqual(self.pm.active_profiles, expected)
 
@@ -254,7 +254,7 @@ class ProfileManagerTest(unittest.TestCase):
         cmd = 'include-regions'
         self.pm.handle_command(cmd, [cmd, REG1, 'oof'])
         check_logs(captured_log, 'bac.profile_manager', 'WARNING',
-                   ['Following regions have not been found:', 'oof'])
+                   ['No regions matched on pattern', 'oof'])
         expected = {REG1}
         self.assertEqual(self.pm.active_regions, expected)
 
